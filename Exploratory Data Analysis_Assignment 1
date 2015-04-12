@@ -1,0 +1,82 @@
+library(data.table)
+#load data.table as hpow
+
+hpow<- fread("household_power_consumption.txt", header = TRUE, sep = ";", na.strings = "?", nrows= 2500000, stringsAsFactors=FALSE)
+
+
+#format columns 3-9 to numeric note: need to find simpler way to do this
+
+hpow$Global_active_power<-as.numeric(hpow$Global_active_power)
+hpow$ Global_reactive_power<-as.numeric(hpow$ Global_reactive_power)
+hpow$Voltage<-as.numeric(hpow$Voltage)
+hpow$Global_intensity<-as.numeric(hpow$Global_intensity)
+hpow$Sub_metering_1<-as.numeric(hpow$Sub_metering_1)
+hpow$Sub_metering_2<-as.numeric(hpow$Sub_metering_2)
+hpow$Sub_metering_3<-as.numeric(hpow$Sub_metering_3)
+
+#combine date & time and add a new column to table
+
+date_and_time <- strptime(paste(hpow$Date, hpow$Time), "%d/%m/%Y %H:%M:%S")
+
+hpow$newdate <- as.POSIXct(date_and_time)
+
+#Verify table is ok
+
+summary(hpow)
+
+#Extract required data for specified dates to new table
+
+hpow_test<-subset(hpow, hpow$newdate>="2007-02-01 00:00:00 "& hpow$newdate<="2007-02-02 23:59:59")
+
+#Plot no 1 & save it
+hist(hpow_test$Global_active_power, main="Global Active Power", xlab = "Global Active Power (kilowatts)", ylab = "Frequency", col = "red")
+
+dev.copy(png, file="plot1.png")
+dev.off()
+
+#Plot no 2 & save
+plot(hpow_test$Global_active_power~hpow_test$newdate, type="l", ylab="Global Active Power (kilowatts)", xlab="")
+dev.copy(png, file="plot2.png")
+dev.off()
+
+
+
+#Plot no 3 & save
+
+plot(hpow_test$newdate,hpow_test$Sub_metering_1, type = "n", xlab = "", ylab = "Energy sub metering")
+points(hpow_test$newdate, hpow_test$Sub_metering_1, type="l", pch = "4", col = "black")
+points(hpow_test$newdate, hpow_test$Sub_metering_2, type="l", pch = "4", col = "red")
+legend("topright", legend = c("Sub_metering_1", "Sub_metering_2", "Sub_metering_3"), col = c("black", "red", "blue"), cex = 0.7, lty = 1)
+
+dev.copy(png, file="plot3.png")
+dev.off()
+
+
+#Plot no 4 (couldn't get the legend for energy sub metering rightly placed!!)
+
+par(mfrow = c(2, 2))
+par(bg = "transparent")
+
+#Sub - Plot 1/4
+plot(hpow_test$newdate, hpow_test$Global_active_power, type = "l", xlab = "", ylab = "Global Active Power")
+
+#Sub - Plot 2/4
+  plot(hpow_test$newdate, hpow_test$Voltage, type = "l", xlab = "datetime", ylab = "Voltage")
+  
+#Sub - Plot 3/4 - The tricky legend - but purpose is for quick diagnosis, so as long as graph is readable, it should be ok.
+
+plot(hpow_test$newdate,hpow_test$Sub_metering_1, type = "n", xlab = "", ylab = "Energy sub metering")
+legend("topright", legend = c("Sub_metering_1", "Sub_metering_2", "Sub_metering_3"), col = c("black", "red", "blue"), cex = 0.5, lty = 1, bty = "n") 
+points(hpow_test$newdate, hpow_test$Sub_metering_1, type="l", pch = "4", col = "black")
+points(hpow_test$newdate, hpow_test$Sub_metering_2, type="l", pch = "4", col = "red")
+points(hpow_test$newdate, hpow_test$Sub_metering_3, type="l", pch = "4", col = "blue")
+
+#Sub-plot 4/4
+plot(hpow_test$newdate, hpow_test$Global_reactive_power, type = "l", xlab = "datetime", ylab = "Global_Reactive_Power")
+
+dev.copy(png, file="plot4.png")
+dev.off()
+
+#End
+
+
